@@ -121,6 +121,7 @@ public class Game {
             }
         });
         gameForm.setContentPane(box);
+        gameForm.setBackground(Color.green);
         gameForm.pack();
     }
 
