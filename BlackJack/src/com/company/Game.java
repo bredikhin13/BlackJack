@@ -22,13 +22,14 @@ public class Game {
     private ImagePanel imagePanel, dealer_imagePanel;
     private Card[] deck = new Card[52];
     private JFrame gameForm;
-    private JLabel pointsLabel, dealerLabel, betLabel, bankLabel;
+    private JLabel pointsLabel, dealerLabel, betLabel, bankLabel, cardLabel;
     private JButton yesButton, noButton, betButton;
     private int curCard = 0;
     private int count_player_cards = 0;
     private Card[] player_cards;
     private JSlider slider;
     private JPanel sliderPanel;
+    private boolean Ace = false;
 
     Game() {
         bankLabel = new JLabel("YOUR BANK: " + bank);
@@ -41,15 +42,19 @@ public class Game {
         slider.setPaintLabels(true);
         slider.setPaintTicks(true);
         slider.setValue(10);
+        slider.setBackground(Color.green);
+        slider.setForeground(Color.black);
+        slider.setPreferredSize(new Dimension(400, 40));
         sliderPanel = new JPanel(new FlowLayout());
         sliderPanel.add(slider);
         sliderPanel.add(betLabel);
         sliderPanel.add(betButton);
         sliderPanel.add(bankLabel);
+        sliderPanel.setBackground(Color.green);
         slider.addChangeListener(new ChangeListener() {
             @Override
             public void stateChanged(ChangeEvent changeEvent) {
-                if (slider.getValue()<10){
+                if (slider.getValue() < 10) {
                     slider.setValue(10);
                 }
                 bet = slider.getValue();
@@ -59,6 +64,7 @@ public class Game {
         gameForm = new JFrame("Black Jack");
         pointsLabel = new JLabel("your cards");
         dealerLabel = new JLabel("Dealer");
+        cardLabel = new JLabel("Next card?  ");
         yesButton = new JButton("Yes");
         yesButton.setEnabled(false);
         noButton = new JButton("No");
@@ -68,10 +74,13 @@ public class Game {
         Box box = Box.createVerticalBox();
         JPanel labelPanel = new JPanel(new GridLayout(4, 1));
         final JPanel buttonPanel = new JPanel(new FlowLayout());
+        labelPanel.setBackground(Color.green);
+        buttonPanel.setBackground(Color.green);
         box.add(imagePanel);
         box.add(labelPanel);
         box.add(dealer_imagePanel);
         labelPanel.add(pointsLabel);
+        buttonPanel.add(cardLabel);
         buttonPanel.add(yesButton);
         buttonPanel.add(noButton);
         labelPanel.add(sliderPanel);
@@ -115,20 +124,53 @@ public class Game {
         gameForm.pack();
     }
 
+    private void setSliderTick(int b){
+        if (b<=100){
+            slider.setMinorTickSpacing(1);
+            slider.setMajorTickSpacing(10);
+            slider.setLabelTable(slider.createStandardLabels(10));
+        }
+        if (b>100 && b<=700){
+            slider.setMinorTickSpacing(10);
+            slider.setMajorTickSpacing(100);
+            slider.setLabelTable(slider.createStandardLabels(100));
+        }
+        if (b>700 && b<=1300){
+            slider.setMinorTickSpacing(100);
+            slider.setMajorTickSpacing(200);
+            slider.setLabelTable(slider.createStandardLabels(100));
+        }
+        if (b>1300 && b<=10000){
+            slider.setMinorTickSpacing(100);
+            slider.setMajorTickSpacing(500);
+            slider.setLabelTable(slider.createStandardLabels(500));
+        }
+        if (b>10000){
+            slider.setMinorTickSpacing(500);
+            slider.setMajorTickSpacing(1000);
+            slider.setLabelTable(slider.createStandardLabels(1000));
+        }
+    }
+
     private void setBankLabel(int b) {
         bankLabel.setText("YOUR BANK: " + b);
     }
 
     private void gameRestart() {
-        if (bank<10){
-            JOptionPane.showMessageDialog(null,"Sorry? but you loose all your many. \n Goodbay!","Oops",JOptionPane.PLAIN_MESSAGE);
+        if (bank < 10) {
+            JOptionPane.showMessageDialog(null, "Sorry? but you loose all your many. \n Goodbay!", "Oops", JOptionPane.PLAIN_MESSAGE);
             gameForm.dispose();
             System.exit(1);
         }
+        setSliderTick(bank);
+        BJ.init_Deck(deck);
+        curCard = 0;
+        Ace = false;
         yesButton.setEnabled(false);
         noButton.setEnabled(false);
         betButton.setEnabled(true);
         slider.setMaximum(bank);
+        slider.repaint();
         slider.setEnabled(true);
         count_player_cards = 0;
         player_points = 0;
@@ -142,9 +184,27 @@ public class Game {
         pointsLabel.setText("Your cards:");
     }
 
+
     private void setPlayer_cards(Card c) {
         player_cards[count_player_cards++] = c;
+        if (Ace && (c.number == 1)){
+            player_points = 21;
+            try {
+                imagePanel.setImage(ImageIO.read(new File("cards/" + c.image)));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            write_player_points();
+            return;
+        }
+        if (c.number == 1)
+            Ace = true;
         player_points += c.weight;
+
+        if (Ace && player_points > 21) {
+            player_points -= 10;
+            Ace = false;
+        }
         try {
             imagePanel.setImage(ImageIO.read(new File("cards/" + c.image)));
         } catch (IOException e) {
@@ -178,7 +238,10 @@ public class Game {
         s += "Dealer points: " + dealer_points;
         dealerLabel.setText(s);
         String message = "";
-        if (dealer_points > 21) {
+        if (Ace && (player_points == 21) && (count_player_cards == 2)) {
+            message = "BLACK JACK! YOU WIN!";
+            bank += bet + 1.5 * bet;
+        } else if (dealer_points > 21) {
             message = "CONGRATULATIONS! YOU WIN!";
             bank += 2 * bet;
         } else if (dealer_points == player_points) {

@@ -16,6 +16,7 @@ public class ImagePanel extends JPanel {
         this.setMinimumSize(d);
         this.setPreferredSize(d);
         this.setLayout(new FlowLayout());
+        this.setBackground(Color.green);
     }
     public Image getImage() {
         return image[count];
